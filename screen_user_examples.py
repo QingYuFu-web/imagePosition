@@ -8,7 +8,9 @@ import json
 from math import ceil, floor, isfinite
 import os
 from pathlib import Path
+from shutil import copyfile
 import sqlite3
+from tempfile import TemporaryDirectory
 from uuid import uuid4
 
 import cv2
@@ -22,6 +24,7 @@ from screen_ai_visibility import on_disabled_control, on_selection_marker
 _CHIP_SIZE = 48
 _ORIGIN_PRIORITY = {"manual": 2, "ai": 1, "detector": 0}
 _EXPLICIT_PHOTO_SPACE = "explicit-screen-photo"
+_BUNDLED_EXAMPLES = Path(__file__).resolve().parent / "learning" / "control-examples.seed.sqlite3"
 _SCHEMA = """
     CREATE TABLE IF NOT EXISTS examples (
         frame_key TEXT NOT NULL,
@@ -785,8 +788,30 @@ class ScreenUserExamples:
     """Store decisions atomically and match new frames by current evidence."""
 
     def __init__(self, path=None):
+        if path is not None:
+            self.path = Path(path)
+            return
         folder = Path(os.environ.get("LOCALAPPDATA") or Path.home() / ".local" / "share") / "ImagePosition"
-        self.path = Path(path) if path is not None else folder / "control-examples.sqlite3"
+        self.path = folder / "control-examples.sqlite3"
+        if not self.path.exists() and _BUNDLED_EXAMPLES.is_file():
+            self._install_bundled_examples()
+
+    def _install_bundled_examples(self):
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with TemporaryDirectory(dir=self.path.parent, prefix=".examples-") as directory:
+                staged = Path(directory) / self.path.name
+                copyfile(_BUNDLED_EXAMPLES, staged)
+                try:
+                    # Publish a complete copy without replacing another process's database.
+                    if os.name == "nt":
+                        staged.rename(self.path)
+                    else:
+                        os.link(staged, self.path)
+                except FileExistsError:
+                    pass
+        except OSError as error:
+            raise OSError(f"无法初始化本机学习库 {self.path}。") from error
 
     @contextmanager
     def _database(self, *, create=False):

@@ -28,7 +28,7 @@ python screen_ui.py '图片路径.jpg'
 
 点击「AI 补标」后，工作台把当前画面的独立裁图和可用的 OCR 文字发给配置的模型。校验通过的结果会自动应用到当前图片，并作为 AI 样本写入学习库。已有人工标注优先，也可以随时拖框或修改用途。
 
-工作台继续读取和更新本机已有的样本库 `%LOCALAPPDATA%\ImagePosition\control-examples.sqlite3`。用 `--examples` 可打开其他本地样本库。
+项目附带学习库快照 `learning/control-examples.seed.sqlite3`。首次运行时，工作台会用它初始化 `%LOCALAPPDATA%\ImagePosition\control-examples.sqlite3`，之后的学习会写入本机库。已有本机库优先。用 `--examples` 可指定其他学习库。
 
 ## 交付 AI
 
@@ -52,4 +52,4 @@ python screen_ui.py '新机位.jpg' --screen-corners 270 259 922 251 917 1648 27
 
 ## 历史学习数据
 
-历史训练清单、标注和素材保存在 `output/` 下各自原有的目录，`img/` 保存原有截图。工作台读取本机样本库 `%LOCALAPPDATA%\ImagePosition\control-examples.sqlite3`，清理前的备份在 `%LOCALAPPDATA%\ImagePosition\backups\`。
+本机的历史训练清单、标注和素材位于 `output/`，原有截图位于 `img/`。清理前的学习库备份位于 `%LOCALAPPDATA%\ImagePosition\backups\`。
